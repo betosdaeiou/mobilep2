@@ -26,12 +26,9 @@ class ConnectivityService {
   void _updateConnectionStatus(List<ConnectivityResult> results) {
     if (results.contains(ConnectivityResult.none)) {
       _isOnline = false;
-    } else if (results.contains(ConnectivityResult.mobile) || 
-               results.contains(ConnectivityResult.wifi) || 
-               results.contains(ConnectivityResult.ethernet)) {
-      _isOnline = true;
     } else {
-      _isOnline = false;
+      // Si no es 'none', asumimos conexión (cubre vpn, ethernet, wifi, mobile, other)
+      _isOnline = true;
     }
     _connectionStatusController.add(_isOnline);
   }

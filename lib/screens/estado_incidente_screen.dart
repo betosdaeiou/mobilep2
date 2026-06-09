@@ -319,9 +319,11 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
   }
 
   int _getEstadoIndex(String estado) {
-    if (estado.toLowerCase() == 'cancelado') return -1;
+    String e = estado.toLowerCase();
+    if (e == 'cancelado') return -1;
+    if (e == 'finalizado') return 4;
     for (int i = 0; i < _pasos.length; i++) {
-      if (_pasos[i].nombre.toLowerCase() == estado.toLowerCase()) return i;
+      if (_pasos[i].nombre.toLowerCase() == e) return i;
     }
     return 0;
   }
@@ -390,12 +392,12 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
             if (tieneTaller && !isCancelado) _buildTallerAsignado(tallerAsignado),
 
             // ─── SECCIÓN DE PAGO ───
-            if (estadoActual == 'Resuelto' && !_tienePagoPendiente()) _buildSeccionPago(),
+            if ((estadoActual.toLowerCase() == 'resuelto' || estadoActual.toLowerCase() == 'finalizado') && !_tienePagoPendiente()) _buildSeccionPago(),
 
             // ─── PAGO PENDIENTE CONFIRMACIÓN ───
-            if (estadoActual == 'Resuelto' && _tienePagoPendiente()) _buildPagoPendienteBanner(),
+            if ((estadoActual.toLowerCase() == 'resuelto' || estadoActual.toLowerCase() == 'finalizado') && _tienePagoPendiente()) _buildPagoPendienteBanner(),
 
-            if (estadoActual == 'Pagado') _buildPagadoBanner(),
+            if (estadoActual.toLowerCase() == 'pagado') _buildPagadoBanner(),
 
             // ─── LISTA DE TALLERES DISPONIBLES ───
             if (!tieneTaller && !isCancelado) ...[

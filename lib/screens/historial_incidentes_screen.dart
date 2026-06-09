@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../config/theme.dart';
 import '../db/database_helper.dart';
 import '../models/incidente_local.dart';
+import '../services/sync_service.dart';
 
 class HistorialIncidentesScreen extends StatefulWidget {
   final LatLng? gpsReal;
@@ -51,7 +52,13 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
     super.dispose();
   }
 
-  void _refresh() {
+  void _refresh() async {
+    // Intentar sincronizar antes de recargar
+    try {
+      await SyncService().syncAll(notify: false);
+    } catch (e) {
+      print('Error en sync manual: $e');
+    }
     setState(() {
       _incidentesFuture = _loadAllIncidentes();
     });

@@ -109,9 +109,11 @@ class SyncService {
   }
 
   /// Sincroniza todo: incidentes + perfil
-  Future<void> syncAll() async {
+  Future<void> syncAll({bool notify = true}) async {
     await syncUnsyncedIncidentes();
     await syncPendingProfileUpdates();
-    FcmService.triggerRefresh(); // Avisar a la UI que se recargue
+    if (notify) {
+      FcmService.triggerRefresh(); // Avisar a la UI que se recargue
+    }
   }
 }

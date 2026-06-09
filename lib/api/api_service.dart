@@ -177,29 +177,6 @@ class ApiService {
     
     if (token == null) throw Exception('No autenticado');
 
-    // Comprobar conectividad
-    final connectivityResult = await (Connectivity().checkConnectivity());
-    bool isOnline = connectivityResult.contains(ConnectivityResult.mobile) || 
-                    connectivityResult.contains(ConnectivityResult.wifi) || 
-                    connectivityResult.contains(ConnectivityResult.ethernet);
-
-    if (!isOnline) {
-      // Guardar localmente
-      final localIncidente = IncidenteLocal(
-        coordenadagps: data['coordenadagps'],
-        descripcion: data['descripcion'],
-        fecha: DateTime.now().toIso8601String(),
-        estado: 'PENDIENTE',
-        isSynced: false,
-      );
-      final saved = await DatabaseHelper.instance.create(localIncidente);
-      return {
-        'mensaje': 'Sin conexión. Incidente guardado localmente.',
-        'id': saved.id,
-        'estado': 'PENDIENTE (Offline)'
-      };
-    }
-
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/incidentes/reportar'),
@@ -215,8 +192,11 @@ class ApiService {
       } else {
         throw Exception(jsonDecode(response.body)['detail'] ?? 'Error al reportar incidente');
       }
-    } catch (e) {
-      // Si falla la petición (ej. no hay internet a pesar de que Connectivity dijo que sí), guardamos local
+    } on Exception catch (e) {
+      if (e.toString().contains('Error al reportar incidente') || e.toString().contains('detail')) {
+        rethrow;
+      }
+      // Si falla la petición por red, guardamos local
       final localIncidente = IncidenteLocal(
         coordenadagps: data['coordenadagps'],
         descripcion: data['descripcion'],
