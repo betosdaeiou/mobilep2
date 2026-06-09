@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../db/database_helper.dart';
 import '../models/incidente_local.dart';
 import '../config/config.dart';
+import 'fcm_service.dart';
 
 class SyncService {
   final DatabaseHelper dbHelper = DatabaseHelper.instance;
@@ -111,5 +112,6 @@ class SyncService {
   Future<void> syncAll() async {
     await syncUnsyncedIncidentes();
     await syncPendingProfileUpdates();
+    FcmService.triggerRefresh(); // Avisar a la UI que se recargue
   }
 }

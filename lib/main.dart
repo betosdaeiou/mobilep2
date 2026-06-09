@@ -13,7 +13,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await Firebase.initializeApp();
-    await FcmService.initialize();
+    // No usamos await aquí para no bloquear runApp, lo cual causa que 
+    // el diálogo de permisos se quede oculto tras el Splash Screen.
+    FcmService.initialize();
   } catch (e) {
     print('Firebase initialization error. Make sure to download and place google-services.json from Firebase Console: $e');
   }
@@ -32,6 +34,8 @@ void main() async {
   runApp(const AppConductores());
 }
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class AppConductores extends StatelessWidget {
   const AppConductores({Key? key}) : super(key: key);
 
@@ -39,6 +43,7 @@ class AppConductores extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'App Conductores',
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: FutureBuilder<String?>(

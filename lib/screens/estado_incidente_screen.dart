@@ -31,9 +31,10 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
   late AnimationController _pulseController;
 
   final List<_EstadoPaso> _pasos = [
-    _EstadoPaso('Reportado', Icons.report_problem_rounded, Color(0xFFE53935)),
-    _EstadoPaso('Asignado', Icons.assignment_turned_in, Color(0xFFFB8C00)),
+    _EstadoPaso('Pendiente', Icons.report_problem_rounded, Color(0xFFE53935)),
+    _EstadoPaso('Taller Asignado', Icons.assignment_turned_in, Color(0xFFFB8C00)),
     _EstadoPaso('En Camino', Icons.local_shipping, Color(0xFF1E88E5)),
+    _EstadoPaso('En Reparacion', Icons.build, Color(0xFF8E24AA)),
     _EstadoPaso('Resuelto', Icons.check_circle, Color(0xFF43A047)),
     _EstadoPaso('Pagado', Icons.paid_rounded, Color(0xFF00C853)),
   ];
@@ -318,21 +319,21 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
   }
 
   int _getEstadoIndex(String estado) {
-    if (estado == 'Cancelado') return -1;
+    if (estado.toLowerCase() == 'cancelado') return -1;
     for (int i = 0; i < _pasos.length; i++) {
-      if (_pasos[i].nombre == estado) return i;
+      if (_pasos[i].nombre.toLowerCase() == estado.toLowerCase()) return i;
     }
     return 0;
   }
 
   @override
   Widget build(BuildContext context) {
-    final estadoActual = _incidente['estado'] ?? 'Reportado';
+    final estadoActual = _incidente['estado'] ?? 'Pendiente';
     final estadoIndex = _getEstadoIndex(estadoActual);
     final tallerAsignado = _incidente['taller'];
     final bool tieneTaller = tallerAsignado != null && _incidente['taller_id'] != null;
-    final bool isCancelado = estadoActual == 'Cancelado';
-    final bool puedeCancelar = !isCancelado && (estadoActual == 'Reportado' || estadoActual == 'Asignado');
+    final bool isCancelado = estadoActual.toLowerCase() == 'cancelado';
+    final bool puedeCancelar = !isCancelado && (estadoActual.toLowerCase() == 'pendiente' || estadoActual.toLowerCase() == 'taller asignado');
 
     return Scaffold(
       backgroundColor: AppTheme.gray50,
@@ -418,12 +419,12 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
                         children: [
                           Text('Talleres Disponibles',
                               style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppTheme.gray900,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold)),
                           Text('Selecciona uno para solicitar asistencia',
                               style: TextStyle(
-                                  color: Colors.white54, fontSize: 13)),
+                                  color: Colors.black54, fontSize: 13)),
                         ],
                       ),
                     ),
@@ -712,14 +713,14 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
                   color: const Color(0xFF5C6BC0).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.psychology, color: Color(0xFF7986CB), size: 24),
+                child: const Icon(Icons.psychology, color: Color(0xFF3949AB), size: 24),
               ),
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
                   'Análisis Inteligente',
                   style: TextStyle(
-                    color: Color(0xFFC5CAE9),
+                    color: Color(0xFF1A237E),
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -729,14 +730,14 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF3949AB).withOpacity(0.4),
+                    color: const Color(0xFF3F51B5).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: const Color(0xFF5C6BC0).withOpacity(0.5)),
                   ),
                   child: Text(
                     'Gravedad: ${analisis['NivelPrioridad']}',
                     style: const TextStyle(
-                      color: Color(0xFFE8EAF6),
+                      color: Color(0xFF1A237E),
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -748,7 +749,7 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
             const SizedBox(height: 16),
             Text(
               analisis['Resumen'],
-              style: TextStyle(color: Colors.indigo.shade100, fontSize: 14, height: 1.4),
+              style: TextStyle(color: Colors.indigo.shade900, fontSize: 14, height: 1.4),
             ),
           ],
           if (analisis['Clasificacion'] != null) ...[
@@ -756,15 +757,15 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.indigo.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border(
-                  left: BorderSide(color: const Color(0xFF7986CB), width: 3),
+                border: const Border(
+                  left: BorderSide(color: Color(0xFF3F51B5), width: 3),
                 ),
               ),
               child: Text(
                 analisis['Clasificacion'],
-                style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                style: TextStyle(color: Colors.indigo.shade800, fontSize: 13, height: 1.4),
               ),
             ),
           ],

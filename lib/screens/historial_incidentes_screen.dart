@@ -28,9 +28,9 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
   final List<String> _estados = [
     'Todos',
     'Pendiente',
-    'Reportado',
-    'Asignado',
+    'Taller Asignado',
     'En Camino',
+    'En Reparacion',
     'Resuelto',
     'Cancelado'
   ];
@@ -81,30 +81,36 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
   }
 
   Color _colorEstado(String estado) {
-    switch (estado) {
-      case 'Asignado':
+    switch (estado.toLowerCase()) {
+      case 'taller asignado':
         return const Color(0xFFFB8C00);
-      case 'En Camino':
+      case 'en camino':
         return const Color(0xFF1E88E5);
-      case 'Resuelto':
+      case 'en reparacion':
+        return const Color(0xFF8E24AA);
+      case 'resuelto':
         return const Color(0xFF43A047);
-      case 'Cancelado':
+      case 'cancelado':
         return const Color(0xFF78909C);
+      case 'pendiente':
       default:
         return const Color(0xFFE53935);
     }
   }
 
   IconData _iconoEstado(String estado) {
-    switch (estado) {
-      case 'Asignado':
+    switch (estado.toLowerCase()) {
+      case 'taller asignado':
         return Icons.assignment_turned_in;
-      case 'En Camino':
+      case 'en camino':
         return Icons.local_shipping;
-      case 'Resuelto':
+      case 'en reparacion':
+        return Icons.build;
+      case 'resuelto':
         return Icons.check_circle;
-      case 'Cancelado':
+      case 'cancelado':
         return Icons.cancel_rounded;
+      case 'pendiente':
       default:
         return Icons.report_problem_rounded;
     }
@@ -167,9 +173,9 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
                 final incidentes = _filtroEstado == 'Todos'
                     ? todos
                     : _filtroEstado == 'Pendiente'
-                        ? todos.where((i) => i['is_local'] == true || (i['estado'] ?? '').contains('Pendiente')).toList()
+                        ? todos.where((i) => i['is_local'] == true || (i['estado'] ?? '').toString().toLowerCase().contains('pendiente')).toList()
                         : todos
-                            .where((i) => i['estado'] == _filtroEstado)
+                            .where((i) => (i['estado'] ?? '').toString().toLowerCase() == _filtroEstado.toLowerCase())
                             .toList();
 
                 if (todos.isEmpty) {
@@ -261,7 +267,7 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
   Widget _buildStats(List<dynamic> todos) {
     final Map<String, int> conteo = {};
     for (final inc in todos) {
-      final e = inc['estado'] ?? 'Reportado';
+      final e = (inc['estado'] ?? 'Reportado').toString().toLowerCase();
       conteo[e] = (conteo[e] ?? 0) + 1;
     }
 
@@ -275,9 +281,9 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: ['Reportado', 'Asignado', 'En Camino', 'Resuelto', 'Cancelado']
+        children: ['Pendiente', 'Taller Asignado', 'En Reparacion', 'Resuelto', 'Cancelado']
             .map((estado) {
-          final count = conteo[estado] ?? 0;
+          final count = conteo[estado.toLowerCase()] ?? 0;
           final color = _colorEstado(estado);
           return Column(
             children: [
@@ -300,7 +306,7 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
 
   // ─── CARD DE INCIDENTE ────────────────────────────────────────
   Widget _buildIncidenteCard(Map<String, dynamic> inc) {
-    final estado = inc['estado'] ?? 'Reportado';
+    final estado = inc['estado'] ?? 'Pendiente';
     final fecha = inc['fecha'] ?? '';
     final taller = inc['taller'];
     final evidencias = inc['evidencias'] as List<dynamic>? ?? [];
@@ -746,8 +752,8 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
 
   // ─── MINI TIMELINE EN CADA CARD ───────────────────────────────
   Widget _buildMiniTimeline(String estadoActual) {
-    final pasos = ['Reportado', 'Asignado', 'En Camino', 'Resuelto'];
-    int currentIndex = pasos.indexOf(estadoActual);
+    final pasos = ['Pendiente', 'Taller Asignado', 'En Reparacion', 'Resuelto'];
+    int currentIndex = pasos.indexWhere((p) => p.toLowerCase() == estadoActual.toLowerCase());
     if (currentIndex < 0) currentIndex = 0;
 
     return Row(

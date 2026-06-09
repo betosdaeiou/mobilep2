@@ -16,6 +16,7 @@ import 'registrar_vehiculo_screen.dart';
 import 'reportar_incidente_screen.dart';
 import 'historial_incidentes_screen.dart';
 import 'notifications_screen.dart';
+import 'mis_chats_screen.dart';
 import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -36,6 +37,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   StreamSubscription<bool>? _connectivitySubscription;
   bool _isOnline = true;
   int _pendingCount = 0;
+
+  List<dynamic> _talleres = [];
+
+  Future<void> _loadTalleres() async {
+    try {
+      final talleres = await ApiService.getTalleresDisponibles(
+        _currentLocation?.latitude, 
+        _currentLocation?.longitude
+      );
+      if (mounted) {
+        setState(() {
+          _talleres = talleres;
+        });
+      }
+    } catch (e) {
+      print("Error loading talleres: $e");
+    }
+  }
+
+  LatLng? _parseCoords(String? coordStr) {
+    if (coordStr == null || coordStr.isEmpty) return null;
+    try {
+      final parts = coordStr.replaceAll(' ', '').split(',');
+      final lat = double.parse(parts[0]);
+      final lng = double.parse(parts[1]);
+      return LatLng(lat, lng);
+    } catch (e) {
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -181,6 +212,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _isLoadingGps = false;
       });
       _mapController.move(_currentLocation!, 15.0);
+      _loadTalleres();
     } catch (e) {
       if (mounted) setState(() {
         // Fallback a La Paz si el emulador falla en dar ubicación
@@ -188,6 +220,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _isLoadingGps = false;
       });
       _mapController.move(const LatLng(-16.5, -68.15), 15.0);
+      _loadTalleres();
     }
 
     // Iniciar escucha del GPS en tiempo real
@@ -385,6 +418,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.chat_bubble_outline, color: AppTheme.gray700),
+            tooltip: 'Mis Chats',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const MisChatsScreen()));
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications_none, color: AppTheme.gray700),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen()));
@@ -417,24 +457,43 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               if (_currentLocation != null)
                 MarkerLayer(
                   markers: [
-                    Marker(
-                      point: _currentLocation!,
-                      width: 80,
-                      height: 80,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.blue600.withOpacity(0.2),
+                    ..._talleres.map((t) {
+                      final coordsStr = t['Coordenadas'] ?? t['coordenadas'];
+                      final coords = _parseCoords(coordsStr);
+                      if (coords == null) return null;
+                      return Marker(
+                        point: coords,
+                        width: 40,
+                        height: 40,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
+                          ),
+                          child: const Icon(Icons.add_circle, color: AppTheme.red500, size: 30),
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.directions_car,
-                            color: AppTheme.blue600,
-                            size: 40,
+                      );
+                    }).whereType<Marker>().toList(),
+                    if (_currentLocation != null)
+                      Marker(
+                        point: _currentLocation!,
+                        width: 80,
+                        height: 80,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppTheme.blue600.withOpacity(0.2),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.directions_car,
+                              color: AppTheme.blue600,
+                              size: 40,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
             ],
@@ -519,93 +578,97 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
           
+          // Floating buttons above the bottom sheet
+          Positioned(
+            bottom: 130, // Just above the white container
+            left: 16,
+            right: 16,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _mostrarMisVehiculos,
+                    icon: const Icon(Icons.garage, size: 20, color: AppTheme.gray800),
+                    label: const Text('Mi Garaje', style: TextStyle(color: AppTheme.gray800)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 4,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _abrirHistorial,
+                    icon: const Icon(Icons.assignment_outlined, size: 20, color: AppTheme.gray800),
+                    label: const Text('Solicitudes', style: TextStyle(color: AppTheme.gray800)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 4,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FloatingActionButton(
+                  mini: true,
+                  elevation: 4,
+                  backgroundColor: Colors.white,
+                  child: const Icon(Icons.my_location, color: AppTheme.blue600),
+                  onPressed: () {
+                    if (_currentLocation != null) {
+                      _mapController.move(_currentLocation!, 16.0);
+                    } else {
+                      _initMap();
+                    }
+                  },
+                )
+              ],
+            ),
+          ),
+          
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, -5))],
               ),
               child: SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          final vehiculos = await _vehiculosFuture;
-                          if (mounted) {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReportarIncidenteScreen(
-                                  vehiculosRegistrados: vehiculos,
-                                  gpsReal: _currentLocation,
-                                ),
-                              ),
-                            );
-                            if (result == true) _refreshList();
-                          }
-                        },
-                        icon: const Icon(Icons.warning_amber_rounded, size: 24),
-                        label: const Text('S.O.S EMERGENCIA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.red500,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                      ),
+                top: false,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final vehiculos = await _vehiculosFuture;
+                      if (mounted) {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ReportarIncidenteScreen(
+                              vehiculosRegistrados: vehiculos,
+                              gpsReal: _currentLocation,
+                            ),
+                          ),
+                        );
+                        if (result == true) _refreshList();
+                      }
+                    },
+                    icon: const Icon(Icons.warning_amber_rounded, size: 24),
+                    label: const Text('S.O.S EMERGENCIA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.red500,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _mostrarMisVehiculos,
-                            icon: const Icon(Icons.garage, size: 20),
-                            label: const Text('Mi Garaje'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              side: const BorderSide(color: AppTheme.gray200),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _abrirHistorial,
-                            icon: const Icon(Icons.assignment_outlined, size: 20),
-                            label: const Text('Solicitudes'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              side: const BorderSide(color: AppTheme.gray200),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        FloatingActionButton(
-                          mini: true,
-                          elevation: 0,
-                          backgroundColor: AppTheme.blue50,
-                          child: const Icon(Icons.my_location, color: AppTheme.blue600),
-                          onPressed: () {
-                            if (_currentLocation != null) {
-                              _mapController.move(_currentLocation!, 16.0);
-                            } else {
-                              _initMap();
-                            }
-                          },
-                        )
-                      ],
-                    )
-                  ],
+                  ),
                 ),
               ),
             ),

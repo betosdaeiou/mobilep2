@@ -18,6 +18,10 @@ class FcmService {
   static final StreamController<String> _refreshController = StreamController<String>.broadcast();
   static Stream<String> get onRefresh => _refreshController.stream;
 
+  static void triggerRefresh() {
+    _refreshController.add('refresh');
+  }
+
   static Future<void> initialize() async {
     // 1. Pedir permisos para iOS/Android 13+
     NotificationSettings settings = await _firebaseMessaging.requestPermission(

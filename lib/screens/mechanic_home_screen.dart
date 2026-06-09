@@ -27,15 +27,14 @@ class _MechanicHomeScreenState extends State<MechanicHomeScreen> {
       final myId = prefs.getInt('user_id');
 
       setState(() {
-        // Filtrar los que están asignados a este mecánico
         _incidentes = data.where((incidente) {
-          final mecanicos = incidente['mecanicos'] as List<dynamic>? ?? [];
-          final bool isMine = mecanicos.any((m) => m['id'] == myId);
-          // Mostrar solo los activos
-          final bool isActive = incidente['estado'] == 'taller asignado' ||
-              incidente['estado'] == 'en camino' ||
-              incidente['estado'] == 'en atención';
-          return isMine && isActive;
+          final estado = incidente['estado']?.toString().toLowerCase() ?? '';
+          final bool isActive = estado == 'taller asignado' ||
+              estado == 'en camino' ||
+              estado == 'en reparacion' ||
+              estado == 'resuelto' ||
+              estado == 'finalizado';
+          return isActive;
         }).toList();
       });
     } catch (e) {

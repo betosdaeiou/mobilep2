@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtl = TextEditingController();
   final _pwdCtl = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   void _login() async {
     if (_emailCtl.text.isEmpty || _pwdCtl.text.isEmpty) return;
@@ -88,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.gray500,
+                    color: AppTheme.gray700,
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -97,16 +98,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     hintText: 'Correo electrónico',
-                    prefixIcon: Icon(Icons.email_outlined, color: AppTheme.gray400),
+                    prefixIcon: Icon(Icons.email_outlined, color: AppTheme.gray500),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _pwdCtl,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
                     hintText: 'Contraseña',
-                    prefixIcon: Icon(Icons.lock_outline, color: AppTheme.gray400),
+                    prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.gray500),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: AppTheme.gray500,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -122,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text(
                       '¿No tienes cuenta? ',
-                      style: TextStyle(color: AppTheme.gray500),
+                      style: TextStyle(color: AppTheme.gray700),
                     ),
                     TextButton(
                       style: TextButton.styleFrom(

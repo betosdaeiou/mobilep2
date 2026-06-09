@@ -4,9 +4,18 @@ import '../api/api_service.dart';
 import '../services/fcm_service.dart';
 
 class ChatScreen extends StatefulWidget {
-  final int incidenteId;
+  final int? incidenteId;
+  final int? destinatarioId;
+  final String tituloChat;
+  final String subtituloChat;
 
-  const ChatScreen({super.key, required this.incidenteId});
+  const ChatScreen({
+    super.key, 
+    this.incidenteId,
+    this.destinatarioId,
+    this.tituloChat = 'Chat',
+    this.subtituloChat = '',
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -52,8 +61,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadMessages() async {
+    if (widget.incidenteId == null && widget.destinatarioId == null) return;
     try {
-      final msgs = await ApiService.getChatMessages(widget.incidenteId);
+      final msgs = widget.incidenteId != null
+          ? await ApiService.getChatMessages(widget.incidenteId!)
+          : await ApiService.getPersonalChat(widget.destinatarioId!);
       if (mounted) {
         setState(() {
           _mensajes = msgs;
@@ -88,7 +100,11 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isSending = true);
 
     try {
-      await ApiService.sendChatMessage(widget.incidenteId, text);
+      if (widget.incidenteId != null) {
+        await ApiService.sendChatMessage(widget.incidenteId!, text);
+      } else if (widget.destinatarioId != null) {
+        await ApiService.sendPersonalMessage(widget.destinatarioId!, text);
+      }
       await _loadMessages();
     } catch (e) {
       if (mounted) {
@@ -153,11 +169,12 @@ class _ChatScreenState extends State<ChatScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Chat', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                Text(
-                  'Incidente #${widget.incidenteId}',
-                  style: const TextStyle(fontSize: 12, color: Colors.white54),
-                ),
+                Text(widget.tituloChat, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                if (widget.subtituloChat.isNotEmpty || widget.incidenteId != null)
+                  Text(
+                    widget.subtituloChat.isNotEmpty ? widget.subtituloChat : 'Incidente #${widget.incidenteId}',
+                    style: const TextStyle(fontSize: 12, color: Colors.white54),
+                  ),
               ],
             ),
           ],

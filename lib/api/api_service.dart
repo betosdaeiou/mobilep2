@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import '../main.dart';
+import '../screens/login_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +9,21 @@ import '../config/config.dart';
 import '../db/database_helper.dart';
 import '../models/incidente_local.dart';
 class ApiService {
+
+  static Future<void> _handleUnauthorized() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    await prefs.remove('role');
+    await prefs.remove('tenant_id');
+    
+    // Close the session and redirect
+    if (navigatorKey.currentState != null) {
+      navigatorKey.currentState!.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
   static String get baseUrl => Config.apiUrl;
 
   static Future<Map<String, dynamic>> registerConductor(Map<String, dynamic> data) async {
@@ -15,6 +33,7 @@ class ApiService {
       body: jsonEncode(data),
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -32,6 +51,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
       
@@ -119,6 +139,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -141,6 +162,7 @@ class ApiService {
       body: jsonEncode(data),
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -226,6 +248,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -259,6 +282,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -281,6 +305,7 @@ class ApiService {
       body: jsonEncode({'taller_id': tallerId}),
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -302,6 +327,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -324,6 +350,7 @@ class ApiService {
       body: jsonEncode({'taller_id': tallerId}),
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -345,6 +372,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -387,6 +415,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -428,6 +457,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -450,6 +480,7 @@ class ApiService {
       body: jsonEncode(data),
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -472,6 +503,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body)['checkout_url'];
     } else {
@@ -493,6 +525,7 @@ class ApiService {
       },
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -515,6 +548,7 @@ class ApiService {
       body: jsonEncode({'nueva_descripcion': nuevaDescripcion}),
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -534,6 +568,7 @@ class ApiService {
       headers: {'Authorization': 'Bearer $token'},
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return List<Map<String, dynamic>>.from(jsonDecode(response.body));
     } else {
@@ -555,6 +590,65 @@ class ApiService {
       body: jsonEncode({'contenido': contenido}),
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error al enviar mensaje');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getMisChats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) throw Exception('No autenticado');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/chats/mis-chats'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error al obtener chats');
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getPersonalChat(int destinatarioId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) throw Exception('No autenticado');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/chats/personal/$destinatarioId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error al obtener chat personal');
+    }
+  }
+
+  static Future<Map<String, dynamic>> sendPersonalMessage(int destinatarioId, String contenido) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token == null) throw Exception('No autenticado');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/chats/personal/$destinatarioId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'contenido': contenido}),
+    );
+
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -564,12 +658,13 @@ class ApiService {
 
   static Future<List<dynamic>> getMantenimientosTaller() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    final token = prefs.getString('token');
     final response = await http.get(
       Uri.parse('$baseUrl/incidentes/mantenimientos'),
       headers: {'Authorization': 'Bearer $token'},
     );
 
+    if (response.statusCode == 401) { await _handleUnauthorized(); throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.'); }
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -579,7 +674,7 @@ class ApiService {
 
   static Future<void> actualizarEstadoIncidente(int incidenteId, String nuevoEstado) async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    final token = prefs.getString('token');
     final response = await http.patch(
       Uri.parse('$baseUrl/incidentes/$incidenteId/estado'),
       headers: {
