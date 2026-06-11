@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
 
+import '../services/websocket_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
 
@@ -11,11 +14,38 @@ class NotificationsScreen extends StatefulWidget {
 class AppNotificationsState extends State<NotificationsScreen> {
   List<dynamic> notificaciones = [];
   bool isLoading = true;
+  final WebSocketService _wsService = WebSocketService();
 
   @override
   void initState() {
     super.initState();
     _loadNotificaciones();
+    _connectWebSocket();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      final token = await ApiService.getToken();
+      final tenantId = await ApiService.getTenantId() ?? 0;
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      if (token != null && userId != null) {
+        _wsService.onMessageReceived = (data) {
+          if (data['action'] == 'nueva_notificacion') {
+            _loadNotificaciones();
+          }
+        };
+        _wsService.connect(tenantId, 'user_$userId', token);
+      }
+    } catch (e) {
+      print('WS Error in Notifications: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _wsService.disconnect();
+    super.dispose();
   }
 
   Future<void> _loadNotificaciones() async {

@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api/api_service.dart';
 import '../services/fcm_service.dart';
+import '../services/websocket_service.dart';
 import 'chat_screen.dart';
 import '../config/theme.dart';
 
@@ -41,6 +42,7 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
 
   bool _isPagando = false;
   late StreamSubscription<String> _fcmSubscription;
+  final WebSocketService _wsService = WebSocketService();
 
   @override
   void initState() {
@@ -55,10 +57,30 @@ class _EstadoIncidenteScreenState extends State<EstadoIncidenteScreen>
     _fcmSubscription = FcmService.onRefresh.listen((_) {
       _recargarIncidente();
     });
+
+    _connectWebSocket();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      final token = await ApiService.getToken();
+      final tenantId = _incidente['tenant_id'] ?? 0;
+      if (token != null) {
+        _wsService.onMessageReceived = (data) {
+          if (data['action'] == 'estado_actualizado' || data['action'] == 'cotizacion_recibida') {
+            _recargarIncidente();
+          }
+        };
+        _wsService.connect(tenantId, 'conductores', token);
+      }
+    } catch (e) {
+      print('WebSocket connection error: $e');
+    }
   }
 
   @override
   void dispose() {
+    _wsService.disconnect();
     _fcmSubscription.cancel();
     _pulseController.dispose();
     super.dispose();

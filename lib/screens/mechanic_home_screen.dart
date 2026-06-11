@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_service.dart';
+import '../services/websocket_service.dart';
 import 'mechanic_tracking_screen.dart';
 import 'login_screen.dart';
 
@@ -12,11 +13,36 @@ class MechanicHomeScreen extends StatefulWidget {
 class _MechanicHomeScreenState extends State<MechanicHomeScreen> {
   List<dynamic> _incidentes = [];
   bool _isLoading = true;
+  final WebSocketService _wsService = WebSocketService();
 
   @override
   void initState() {
     super.initState();
     _loadIncidentes();
+    _connectWebSocket();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      final token = await ApiService.getToken();
+      final tenantId = await ApiService.getTenantId() ?? 0;
+      if (token != null) {
+        _wsService.onMessageReceived = (data) {
+          if (data['action'] == 'taller_asignado' || data['action'] == 'estado_actualizado' || data['action'] == 'nuevo_incidente') {
+            _loadIncidentes();
+          }
+        };
+        _wsService.connect(tenantId, 'mecanicos', token);
+      }
+    } catch (e) {
+      print('WS Error in MechanicHomeScreen: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _wsService.disconnect();
+    super.dispose();
   }
 
   Future<void> _loadIncidentes() async {

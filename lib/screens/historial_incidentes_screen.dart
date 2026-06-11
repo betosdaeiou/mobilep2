@@ -4,6 +4,8 @@ import 'estado_incidente_screen.dart';
 import 'package:latlong2/latlong.dart';
 import '../config/theme.dart';
 
+import '../services/websocket_service.dart';
+
 class HistorialIncidentesScreen extends StatefulWidget {
   final LatLng? gpsReal;
 
@@ -19,6 +21,7 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
   String _filtroEstado = 'Todos';
   final Map<int, TextEditingController> _reintentarControllers = {};
   bool _isReintentando = false;
+  final WebSocketService _wsService = WebSocketService();
 
   final List<String> _estados = [
     'Todos',
@@ -34,6 +37,30 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
   void initState() {
     super.initState();
     _incidentesFuture = _loadAllIncidentes();
+    _connectWebSocket();
+  }
+
+  Future<void> _connectWebSocket() async {
+    try {
+      final token = await ApiService.getToken();
+      final tenantId = await ApiService.getTenantId() ?? 0;
+      if (token != null) {
+        _wsService.onMessageReceived = (data) {
+          if (data['action'] == 'estado_actualizado' || data['action'] == 'cotizacion_recibida') {
+            _refresh();
+          }
+        };
+        _wsService.connect(tenantId, 'conductores', token);
+      }
+    } catch (e) {
+      print('WS Error in Historial: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _wsService.disconnect();
+    super.dispose();
   }
 
   void _refresh() {
