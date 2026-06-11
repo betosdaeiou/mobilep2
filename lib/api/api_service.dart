@@ -4,10 +4,7 @@ import '../screens/login_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import '../config/config.dart';
-import '../db/database_helper.dart';
-import '../models/incidente_local.dart';
 class ApiService {
 
   static Future<void> _handleUnauthorized() async {
@@ -177,40 +174,23 @@ class ApiService {
     
     if (token == null) throw Exception('No autenticado');
 
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/incidentes/reportar'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(data),
-      );
+    final response = await http.post(
+      Uri.parse('$baseUrl/incidentes/reportar'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(data),
+    ).timeout(const Duration(seconds: 120));
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception(jsonDecode(response.body)['detail'] ?? 'Error al reportar incidente');
-      }
-    } on Exception catch (e) {
-      if (e.toString().contains('Error al reportar incidente') || e.toString().contains('detail')) {
-        rethrow;
-      }
-      // Si falla la petición por red, guardamos local
-      final localIncidente = IncidenteLocal(
-        coordenadagps: data['coordenadagps'],
-        descripcion: data['descripcion'],
-        fecha: DateTime.now().toIso8601String(),
-        estado: 'PENDIENTE',
-        isSynced: false,
-      );
-      final saved = await DatabaseHelper.instance.create(localIncidente);
-      return {
-        'mensaje': 'Fallo de red. Incidente guardado localmente.',
-        'id': saved.id,
-        'estado': 'PENDIENTE (Offline)'
-      };
+    if (response.statusCode == 401) {
+      await _handleUnauthorized();
+      throw Exception('Sesión expirada. Por favor inicia sesión nuevamente.');
     }
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    }
+    throw Exception(jsonDecode(response.body)['detail'] ?? 'Error al reportar incidente');
   }
 
   // --- Endpoints de Gestión de Solicitudes ---

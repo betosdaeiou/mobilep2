@@ -4,7 +4,6 @@ import 'home_screen.dart';
 import 'mechanic_home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'register_screen.dart';
-import '../services/fcm_service.dart';
 import '../config/theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -24,7 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       await ApiService.login(_emailCtl.text, _pwdCtl.text);
-      await FcmService.updateTokenOnServer();
       
       final prefs = await SharedPreferences.getInstance();
       final role = prefs.getString('role') ?? 'Conductor';

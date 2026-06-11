@@ -199,7 +199,7 @@ class _MechanicTrackingScreenState extends State<MechanicTrackingScreen> {
                     children: [
                       TileLayer(
                         urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.example.mobile_app',
+                        userAgentPackageName: 'com.sos.emergencias_app',
                       ),
                       PolylineLayer(
                         polylines: [

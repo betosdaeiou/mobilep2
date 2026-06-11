@@ -1,13 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../api/api_service.dart';
-import '../services/fcm_service.dart';
 import 'estado_incidente_screen.dart';
 import 'package:latlong2/latlong.dart';
 import '../config/theme.dart';
-import '../db/database_helper.dart';
-import '../models/incidente_local.dart';
-import '../services/sync_service.dart';
 
 class HistorialIncidentesScreen extends StatefulWidget {
   final LatLng? gpsReal;
@@ -24,7 +19,6 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
   String _filtroEstado = 'Todos';
   final Map<int, TextEditingController> _reintentarControllers = {};
   bool _isReintentando = false;
-  late StreamSubscription<String> _fcmSubscription;
 
   final List<String> _estados = [
     'Todos',
@@ -40,51 +34,16 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
   void initState() {
     super.initState();
     _incidentesFuture = _loadAllIncidentes();
-    
-    _fcmSubscription = FcmService.onRefresh.listen((_) {
-      _refresh();
-    });
   }
 
-  @override
-  void dispose() {
-    _fcmSubscription.cancel();
-    super.dispose();
-  }
-
-  void _refresh() async {
-    // Intentar sincronizar antes de recargar
-    try {
-      await SyncService().syncAll(notify: false);
-    } catch (e) {
-      print('Error en sync manual: $e');
-    }
+  void _refresh() {
     setState(() {
       _incidentesFuture = _loadAllIncidentes();
     });
   }
 
   Future<List<dynamic>> _loadAllIncidentes() async {
-    List<dynamic> remote = [];
-    try {
-      remote = await ApiService.getMisIncidentes();
-    } catch (e) {
-      print('No se pudo cargar de la API (Offline): $e');
-    }
-
-    final dbHelper = DatabaseHelper.instance;
-    final locals = await dbHelper.readAllUnsyncedIncidentes();
-    
-    final List<dynamic> localAsMap = locals.map((l) => {
-      'id': l.id,
-      'estado': l.estado,
-      'fecha': l.fecha,
-      'coordenadagps': l.coordenadagps,
-      'evidencias': [{'descripcion': l.descripcion}],
-      'is_local': true,
-    }).toList();
-    
-    return [...localAsMap, ...remote];
+    return await ApiService.getMisIncidentes();
   }
 
   Color _colorEstado(String estado) {

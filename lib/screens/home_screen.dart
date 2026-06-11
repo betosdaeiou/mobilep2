@@ -7,9 +7,6 @@ import 'package:geolocator/geolocator.dart';
 
 import '../api/api_service.dart';
 import '../config/theme.dart';
-import '../services/websocket_service.dart';
-import '../services/connectivity_service.dart';
-import '../db/database_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login_screen.dart';
 import 'registrar_vehiculo_screen.dart';
@@ -30,13 +27,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final MapController _mapController = MapController();
   bool _isLoadingGps = true;
   StreamSubscription<Position>? _positionStreamSubscription;
-  final WebSocketService _webSocketService = WebSocketService();
-  
-  // Offline support
-  final ConnectivityService _connectivityService = ConnectivityService();
-  StreamSubscription<bool>? _connectivitySubscription;
-  bool _isOnline = true;
-  int _pendingCount = 0;
 
   List<dynamic> _talleres = [];
 
@@ -74,9 +64,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _vehiculosFuture = _loadVehiculos();
     _initMap();
-    _initWebSocket();
-    _initConnectivity();
-    _updatePendingCount();
   }
 
   Future<List<dynamic>> _loadVehiculos() async {
@@ -97,71 +84,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  void _initConnectivity() {
-    _isOnline = _connectivityService.isOnline;
-    _connectivitySubscription = _connectivityService.connectionStatusStream.listen((isOnline) {
-      if (mounted) {
-        setState(() => _isOnline = isOnline);
-        if (isOnline) {
-          _updatePendingCount();
-        }
-      }
-    });
-  }
-
-  Future<void> _updatePendingCount() async {
-    final count = await DatabaseHelper.instance.countUnsyncedIncidentes();
-    if (mounted) {
-      setState(() => _pendingCount = count);
-    }
-  }
-
-  Future<void> _initWebSocket() async {
-    try {
-      final profile = await ApiService.getProfile();
-      final userId = profile['Id'];
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-      
-      _webSocketService.connect(0, 'conductor_$userId', token);
-      
-      _webSocketService.onMessageReceived = (message) {
-        if (!mounted) return;
-        final action = message['action'];
-        String msg = "Notificación recibida";
-        if (action == 'nueva_cotizacion') {
-           msg = "¡Un taller ha ofrecido una cotización!";
-        } else if (action == 'incidente_aceptado') {
-           msg = "Su incidente ha sido aceptado por el taller.";
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.notifications_active, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(child: Text(msg)),
-              ],
-            ),
-            backgroundColor: const Color(0xFF4F46E5),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      };
-    } catch (e) {
-      print("Error al conectar WS: $e");
-    }
-  }
-
   @override
   void dispose() {
     _positionStreamSubscription?.cancel();
-    _connectivitySubscription?.cancel();
-    _connectivityService.dispose();
-    _webSocketService.disconnect();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -317,7 +242,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _vehiculosFuture = _loadVehiculos();
     });
-    _updatePendingCount();
   }
 
   void _mostrarMisVehiculos() async {
@@ -452,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.mobile_app',
+                userAgentPackageName: 'com.sos.emergencias_app',
               ),
               if (_currentLocation != null)
                 MarkerLayer(
@@ -518,61 +442,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
                     SizedBox(width: 16),
                     Text("Buscando tu ubicación...", style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.gray900))
-                  ],
-                ),
-              ),
-            ),
-          
-          // ─── OFFLINE BANNER ───
-          if (!_isOnline)
-            Positioned(
-              top: 100,
-              left: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.orange.shade700, Colors.orange.shade600],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.cloud_off, color: Colors.white, size: 22),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Modo Offline',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
-                          ),
-                          Text(
-                            _pendingCount > 0
-                                ? '$_pendingCount reporte(s) pendiente(s) de envío'
-                                : 'Puedes reportar emergencias sin internet',
-                            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_pendingCount > 0)
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$_pendingCount',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
-                        ),
-                      ),
                   ],
                 ),
               ),
